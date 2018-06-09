@@ -300,11 +300,20 @@ function modify_dns() {
 
   # Apply ProtonVPN DNS
   if [[ ("$1" == "to_protonvpn_dns") ]]; then
-
+    local free_dns_server="10.8.0.1" paid_dns_server="10.8.8.1" dns_server i
     if [[ $(get_vpn_tier "$2") == "0" ]]; then
-      dns_server="10.8.0.1" # free tier dns
+      dns_server=$free_dns_server # free tier dns
     else
-      dns_server="10.8.8.1" # paid tier dns
+      # Use paid tier DNS server if available.
+      for ((i = 0; i < 10; ++i)); do
+        if ping -n -c1 -W1 "$paid_dns_server" >&/dev/null; then
+          dns_server=$paid_dns_server # paid tier dns
+          break
+        fi
+      done
+      if [[ -z "$dns_server" ]]; then
+        dns_server=$free_dns_server
+      fi
     fi
 
     if [[ ( $(detect_platform_type) == "MacOS" ) ]]; then
