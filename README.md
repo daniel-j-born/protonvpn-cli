@@ -41,29 +41,29 @@ $ wget "https://github.com/ProtonVPN/protonvpn-cli/raw/master/protonvpn-cli.sh" 
 
 # Usage #
 
-| **Command**                                   | **Description**                                                |
-| :-------------------------------------------- | :------------------------------------------------------------- |
-| `protonvpn-cli --init`                        | Initialize ProtonVPN profile on the machine.                   |
-| `protonvpn-cli -c, --connect`                 | Select and connect to a ProtonVPN server.                      |
-| `protonvpn-cli -c [server-name] [protocol]`   | Connect to a ProtonVPN server by name.                         |
-| `protonvpn-cli -m, --menu`                    | Select and connect to a ProtonVPN server from a menu.          |
-| `protonvpn-cli -r, --random-connect`          | Connect to a random ProtonVPN server.                          |
-| `protonvpn-cli -l, --last-connect`            | Connect to the previously used ProtonVPN server.               |
-| `protonvpn-cli -f, --fastest-connect`         | Connect to the fastest available ProtonVPN server.             |
-| `protonvpn-cli -p2p, --p2p-connect`           | Connect to the fastest available P2P ProtonVPN server.         |
-| `protonvpn-cli -tor, --tor-connect`           | Connect to the fastest available ProtonVPN TOR server.         |
-| `protonvpn-cli -sc, --secure-core-connect`    | Connect to the fastest available ProtonVPN SecureCore server.  |
-| `protonvpn-cli -cc, --country-connect`        | Select and connect to a ProtonVPN server by country.           |
-| `protonvpn-cli -cc [country-name] [protocol]` | Connect to the fastest available server in a specific country. |
-| `protonvpn-cli -d, --disconnect`              | Disconnect the current session.                                |
-| `protonvpn-cli --reconnect`                   | Reconnect to the current ProtonVPN server.                     |
-| `protonvpn-cli --ip`                          | Print the current public IP address.                           |
-| `protonvpn-cli --status`                      | Print connection status.                                       |
-| `protonvpn-cli --update`                      | Update protonvpn-cli.                                          |
-| `protonvpn-cli --install`                     | Install protonvpn-cli.                                         |
-| `protonvpn-cli --uninstall`                   | Uninstall protonvpn-cli.                                       |
-| `protonvpn-cli --version`                     | Display version.                                               |
-| `protonvpn-cli --help`                        | Show help message.                                             |
+| **Command**                                          | **Description**                                                |
+| :--------------------------------------------------- | :------------------------------------------------------------- |
+| `protonvpn-cli --init`                               | Initialize ProtonVPN profile on the machine.                   |
+| `protonvpn-cli -c, --connect`                        | Select and connect to a ProtonVPN server.                      |
+| `protonvpn-cli -c [server-name] [protocol] [tier]`   | Connect to a ProtonVPN server by name.                         |
+| `protonvpn-cli -m, --menu`                           | Select and connect to a ProtonVPN server from a menu.          |
+| `protonvpn-cli -r, --random-connect [tier]`          | Connect to a random ProtonVPN server.                          |
+| `protonvpn-cli -l, --last-connect`                   | Connect to the previously used ProtonVPN server.               |
+| `protonvpn-cli -f, --fastest-connect [tier]`         | Connect to the fastest available ProtonVPN server.             |
+| `protonvpn-cli -p2p, --p2p-connect [tier]`           | Connect to the fastest available P2P ProtonVPN server.         |
+| `protonvpn-cli -tor, --tor-connect [tier]`           | Connect to the fastest available ProtonVPN TOR server.         |
+| `protonvpn-cli -sc, --secure-core-connect [tier]`    | Connect to the fastest available ProtonVPN SecureCore server.  |
+| `protonvpn-cli -cc, --country-connect [tier]`        | Select and connect to a ProtonVPN server by country.           |
+| `protonvpn-cli -cc [country-name] [protocol] [tier]` | Connect to the fastest available server in a specific country. |
+| `protonvpn-cli -d, --disconnect`                     | Disconnect the current session.                                |
+| `protonvpn-cli --reconnect`                          | Reconnect to the current ProtonVPN server.                     |
+| `protonvpn-cli --ip`                                 | Print the current public IP address.                           |
+| `protonvpn-cli --status`                             | Print connection status.                                       |
+| `protonvpn-cli --update`                             | Update protonvpn-cli.                                          |
+| `protonvpn-cli --install`                            | Install protonvpn-cli.                                         |
+| `protonvpn-cli --uninstall`                          | Uninstall protonvpn-cli.                                       |
+| `protonvpn-cli --version`                            | Display version.                                               |
+| `protonvpn-cli --help`                               | Show help message.                                             |
 
 
 protonvpn-cli can also be used by typing `pvpn`, once installed.

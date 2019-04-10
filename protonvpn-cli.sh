@@ -794,7 +794,7 @@ function connect_to_fastest_vpn() {
   check_if_internet_is_working_normally
 
   echo "Fetching ProtonVPN servers..."
-  config_id=$(get_fastest_vpn_connection_id)
+  config_id=$(get_fastest_vpn_connection_id "" "$1")
   selected_protocol="udp"
   openvpn_connect "$config_id" "$selected_protocol"
 }
@@ -805,7 +805,7 @@ function connect_to_fastest_p2p_vpn() {
   check_if_internet_is_working_normally
 
   echo "Fetching ProtonVPN servers..."
-  config_id=$(get_fastest_vpn_connection_id "P2P")
+  config_id=$(get_fastest_vpn_connection_id "P2P" "$1")
   selected_protocol="udp"
   openvpn_connect "$config_id" "$selected_protocol"
 }
@@ -816,7 +816,7 @@ function connect_to_fastest_tor_vpn() {
   check_if_internet_is_working_normally
 
   echo "Fetching ProtonVPN servers..."
-  config_id=$(get_fastest_vpn_connection_id "TOR")
+  config_id=$(get_fastest_vpn_connection_id "TOR" "$1")
   selected_protocol="udp"
   openvpn_connect "$config_id" "$selected_protocol"
 }
@@ -827,7 +827,7 @@ function connect_to_fastest_secure_core_vpn() {
   check_if_internet_is_working_normally
 
   echo "Fetching ProtonVPN servers..."
-  config_id=$(get_fastest_vpn_connection_id "SECURE_CORE")
+  config_id=$(get_fastest_vpn_connection_id "SECURE_CORE" "$1")
   selected_protocol="udp"
   openvpn_connect "$config_id" "$selected_protocol"
 }
@@ -838,7 +838,7 @@ function connect_to_random_vpn() {
   check_if_internet_is_working_normally
 
   echo "Fetching ProtonVPN servers..."
-  config_id=$(get_random_vpn_connection_id)
+  config_id=$(get_random_vpn_connection_id "$1")
   available_protocols=("tcp" "udp")
   selected_protocol=${available_protocols[$RANDOM % ${#available_protocols[@]}]}
   openvpn_connect "$config_id" "$selected_protocol"
@@ -887,12 +887,12 @@ function connect_to_specific_server() {
 
   echo "Fetching ProtonVPN servers..."
 
-  if [[ "$3" == "server" ]]; then
-    server_list=$(get_vpn_config_details | tr ' ' '@')
+  if [[ "$4" == "server" ]]; then
+    server_list=$(get_vpn_config_details "$3" | tr ' ' '@')
   fi
 
-  if [[ "$3" == "country" ]]; then
-    server_list=$(get_country_vpn_servers_details | tr ' ' '@')
+  if [[ "$4" == "country" ]]; then
+    server_list=$(get_country_vpn_servers_details "$3" | tr ' ' '@')
   fi
 
   if [[ "$(echo "$2" | tr '[:upper:]' '[:lower:]')" == "tcp" ]]; then
@@ -901,7 +901,7 @@ function connect_to_specific_server() {
     protocol="udp"
   fi
 
-  if [[ "$3" == "server" ]]; then
+  if [[ "$4" == "server" ]]; then
     for i in $server_list; do
       id=$(echo "$i" | cut -d"@" -f1)
       name=$(echo "$i" | cut -d"@" -f2)
@@ -911,7 +911,7 @@ function connect_to_specific_server() {
     done
   fi
 
-  if [[ "$3" == "country" ]]; then
+  if [[ "$4" == "country" ]]; then
     for i in $server_list; do
       id=$(echo "$i" | cut -d"@" -f1)
       name=$(echo "$i" | cut -d"@" -f2)
@@ -923,10 +923,10 @@ function connect_to_specific_server() {
   fi
 
   # If not found in $server_list.
-  if [[ "$3" == "server" ]]; then
+  if [[ "$4" == "server" ]]; then
     echo "[!] Error: Invalid server name, or server not accessible with your plan."
   fi
-  if [[ "$3" == "country" ]]; then
+  if [[ "$4" == "country" ]]; then
     echo "[!] Error: Invalid country name, or country not accessible with your plan."
   fi
   exit 1
@@ -1302,6 +1302,7 @@ END`
 }
 
 function get_country_vpn_servers_details() {
+  min_tier=${1:-0}
   response_output=$(wget --header 'x-pm-appversion: Other' \
                          --header 'x-pm-apiversion: 3' \
                          --header 'Accept: application/vnd.protonmail.v1+json' \
@@ -1311,6 +1312,9 @@ function get_country_vpn_servers_details() {
     return
   fi
   tier=$(< "$(get_protonvpn_cli_home)/protonvpn_tier")
+  if [[ $min_tier -gt $tier ]]; then
+    min_tier=$tier
+  fi
   output=`python <<END
 import json
 json_parsed_response = json.loads("""$response_output""")
@@ -1319,7 +1323,7 @@ all_features = {"SECURE_CORE": 1, "TOR": 2, "P2P": 4, "XOR": 8, "IPV6": 16}
 excluded_features_on_fastest_connect = ["TOR"]
 
 for _ in json_parsed_response["LogicalServers"]:
-    if (_["Tier"] <= int("""$tier""")):
+    if (_["Tier"] <= int("""$tier""") and _["Tier"] >= int("""$min_tier""")):
         output.append(_)
 
 candidates_1 = {}
@@ -1372,6 +1376,7 @@ END`
 
 function get_fastest_vpn_connection_id() {
   required_feature=${1:-}
+  min_tier=${2:-0}
   response_output=$(wget --header 'x-pm-appversion: Other' \
                          --header 'x-pm-apiversion: 3' \
                          --header 'Accept: application/vnd.protonmail.v1+json' \
@@ -1382,6 +1387,9 @@ function get_fastest_vpn_connection_id() {
   fi
 
   tier=$(< "$(get_protonvpn_cli_home)/protonvpn_tier")
+  if [[ $min_tier -gt $tier ]]; then
+    min_tier=$tier
+  fi
   output=`$python <<END
 import json, math, random
 json_parsed_response = json.loads("""$response_output""")
@@ -1410,7 +1418,7 @@ for _ in json_parsed_response["LogicalServers"]:
             is_excluded = True
     if is_excluded is True:
         continue
-    if (_["Tier"] <= int("""$tier""")):
+    if (_["Tier"] <= int("""$tier""") and _["Tier"] >= int("""$min_tier""")):
         candidates_1.append(_)
 
 candidates_2_size = float(len(candidates_1)) / 100.00 * 5.00
@@ -1425,6 +1433,7 @@ END`
 }
 
 function get_random_vpn_connection_id() {
+  min_tier=${1:-0}
   response_output=$(wget --header 'x-pm-appversion: Other' \
                          --header 'x-pm-apiversion: 3' \
                          --header 'Accept: application/vnd.protonmail.v1+json' \
@@ -1436,12 +1445,15 @@ function get_random_vpn_connection_id() {
   fi
 
   tier=$(< "$(get_protonvpn_cli_home)/protonvpn_tier")
+  if [[ $min_tier -gt $tier ]]; then
+    min_tier=$tier
+  fi
   output=`$python <<END
 import json, random
 json_parsed_response = json.loads("""$response_output""")
 output = []
 for _ in json_parsed_response["LogicalServers"]:
-    if (_["Tier"] <= int("""$tier""")):
+    if (_["Tier"] <= int("""$tier""") and _["Tier"] >= int("""$min_tier""")):
         output.append(_)
 print(random.choice(output)["ID"])
 END`
@@ -1450,6 +1462,7 @@ END`
 }
 
 function get_vpn_config_details() {
+  min_tier=${1:-0}
   response_output=$(wget --header 'x-pm-appversion: Other' \
                          --header 'x-pm-apiversion: 3' \
                          --header 'Accept: application/vnd.protonmail.v1+json' \
@@ -1461,12 +1474,15 @@ function get_vpn_config_details() {
   fi
 
   tier=$(< "$(get_protonvpn_cli_home)/protonvpn_tier")
+  if [[ $min_tier -gt $tier ]]; then
+    min_tier=$tier
+  fi
   output=`$python <<END
 import json, random
 json_parsed_response = json.loads("""$response_output""")
 output = []
 for _ in json_parsed_response["LogicalServers"]:
-    if (_["Tier"] <= int("""$tier""")):
+    if (_["Tier"] <= int("""$tier""") and _["Tier"] >= int("""$min_tier""")):
         output.append(_)
 all_features = {"SECURE_CORE": 1, "TOR": 2, "P2P": 4, "XOR": 8, "IPV6": 16}
 output = sorted(output, key=lambda k: k['Name'])
@@ -1506,27 +1522,27 @@ function help_message() {
     echo -e "ProtonVPN Command-Line Tool – v$version\n"
     echo -e "Usage: $(basename $0) [option]\n"
     echo "Options:"
-    echo "   --init                              Initialize ProtonVPN profile on the machine."
-    echo "   -c, --connect                       Select and connect to a ProtonVPN server."
-    echo "   -c [server-name] [protocol]         Connect to a ProtonVPN server by name."
-    echo "   -m, --menu                          Select and connect to a ProtonVPN server from a menu."
-    echo "   -r, --random-connect                Connect to a random ProtonVPN server."
-    echo "   -l, --last-connect                  Connect to the previously used ProtonVPN server."
-    echo "   -f, --fastest-connect               Connect to the fastest available ProtonVPN server."
-    echo "   -p2p, --p2p-connect                 Connect to the fastest available P2P ProtonVPN server."
-    echo "   -tor, --tor-connect                 Connect to the fastest available ProtonVPN TOR server."
-    echo "   -sc, --secure-core-connect          Connect to the fastest available ProtonVPN SecureCore server."
-    echo "   -cc, --country-connect              Select and connect to a ProtonVPN server by country."
-    echo "   -cc [country-name] [protocol]       Connect to the fastest available server in a specific country."
-    echo "   -d, --disconnect                    Disconnect the current session."
-    echo "   --reconnect                         Reconnect to the current ProtonVPN server."
-    echo "   --ip                                Print the current public IP address."
-    echo "   --status                            Print connection status."
-    echo "   --update                            Update protonvpn-cli."
-    echo "   --install                           Install protonvpn-cli."
-    echo "   --uninstall                         Uninstall protonvpn-cli."
-    echo "   -v, --version                       Display version."
-    echo "   -h, --help                          Show this help message."
+    echo "   --init                               Initialize ProtonVPN profile on the machine."
+    echo "   -c, --connect                        Select and connect to a ProtonVPN server."
+    echo "   -c [server-name] [protocol]          Connect to a ProtonVPN server by name."
+    echo "   -m, --menu                           Select and connect to a ProtonVPN server from a menu."
+    echo "   -r, --random-connect [tier]          Connect to a random ProtonVPN server."
+    echo "   -l, --last-connect                   Connect to the previously used ProtonVPN server."
+    echo "   -f, --fastest-connect [tier]         Connect to the fastest available ProtonVPN server."
+    echo "   -p2p, --p2p-connect [tier]           Connect to the fastest available P2P ProtonVPN server."
+    echo "   -tor, --tor-connect [tier]           Connect to the fastest available ProtonVPN TOR server."
+    echo "   -sc, --secure-core-connect [tier]    Connect to the fastest available ProtonVPN SecureCore server."
+    echo "   -cc, --country-connect               Select and connect to a ProtonVPN server by country."
+    echo "   -cc [country-name] [protocol] [tier] Connect to the fastest available server in a specific country."
+    echo "   -d, --disconnect                     Disconnect the current session."
+    echo "   --reconnect                          Reconnect to the current ProtonVPN server."
+    echo "   --ip                                 Print the current public IP address."
+    echo "   --status                             Print connection status."
+    echo "   --update                             Update protonvpn-cli."
+    echo "   --install                            Install protonvpn-cli."
+    echo "   --uninstall                          Uninstall protonvpn-cli."
+    echo "   -v, --version                        Display version."
+    echo "   -h, --help                           Show this help message."
     echo
 
     exit 0
@@ -1543,30 +1559,30 @@ case $user_input in
     ;;
   "-reconnect"|"--reconnect") reconnect_to_current_vpn
     ;;
-  "-r"|"--r"|"-random"|"--random"|"-random-connect"|"--random-connect") connect_to_random_vpn
+  "-r"|"--r"|"-random"|"--random"|"-random-connect"|"--random-connect") connect_to_random_vpn "$2"
     ;;
   "-l"|"--l"|"-last-connect"|"--last-connect") connect_to_previous_vpn
     ;;
-  "-f"|"--f"|"-fastest"|"--fastest"|"-fastest-connect"|"--fastest-connect") connect_to_fastest_vpn
+  "-f"|"--f"|"-fastest"|"--fastest"|"-fastest-connect"|"--fastest-connect") connect_to_fastest_vpn "$2"
     ;;
-  "-p2p"|"--p2p"|"-p2p-connect"|"--p2p-connect") connect_to_fastest_p2p_vpn
+  "-p2p"|"--p2p"|"-p2p-connect"|"--p2p-connect") connect_to_fastest_p2p_vpn "$2"
     ;;
-  "-tor"|"--tor"|"-tor-connect"|"--tor-connect") connect_to_fastest_tor_vpn
+  "-tor"|"--tor"|"-tor-connect"|"--tor-connect") connect_to_fastest_tor_vpn "$2"
     ;;
-  "-sc"|"--sc"|"-secure-core-connect"|"--secure-core-connect") connect_to_fastest_secure_core_vpn
+  "-sc"|"--sc"|"-secure-core-connect"|"--secure-core-connect") connect_to_fastest_secure_core_vpn "$2"
     ;;
   "-cc"|"--cc"|"-country-connect"|"--country-connect")
     if [[ $# == 1 ]]; then
       connection_to_vpn_via_dialog_menu "countries"
     elif [[ $# -gt 1 ]]; then
-      connect_to_specific_server "$2" "$3" "country"
+      connect_to_specific_server "$2" "$3" "$4" "country"
     fi
     ;;
   "-c"|"-connect"|"--c"|"--connect")
     if [[ $# == 1 ]]; then
       connection_to_vpn_via_dialog_menu "servers"
     elif [[ $# -gt 1 ]]; then
-      connect_to_specific_server "$2" "$3" "server"
+      connect_to_specific_server "$2" "$3" "$4" "server"
     fi
     ;;
   "-m"|"--m"|"-menu"|"--menu") connection_to_vpn_via_general_dialog_menu
