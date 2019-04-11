@@ -1395,12 +1395,13 @@ import json, math, random
 json_parsed_response = json.loads("""$response_output""")
 
 all_features = {"SECURE_CORE": 1, "TOR": 2, "P2P": 4, "XOR": 8, "IPV6": 16}
-excluded_features_on_fastest_connect = ["TOR"]
+excluded_features_on_fastest_connect = ["TOR", "SECURE_CORE"]
 required_features = ["$required_feature"] if "$required_feature" in all_features else []
-if "TOR" in required_features:
-    excluded_features_on_fastest_connect.remove("TOR")
+for _ in required_features:
+    excluded_features_on_fastest_connect.remove(_)
 
-candidates_1 = []
+min_score = None
+min_score_vpn_id = None
 for _ in json_parsed_response["LogicalServers"]:
     server_features_index = int(_["Features"])
     server_features  = []
@@ -1418,14 +1419,12 @@ for _ in json_parsed_response["LogicalServers"]:
             is_excluded = True
     if is_excluded is True:
         continue
-    if (_["Tier"] <= int("""$tier""") and _["Tier"] >= int("""$min_tier""")):
-        candidates_1.append(_)
+    if (_["Tier"] <= int("""$tier""") and _["Tier"] >= int("""$min_tier""")
+        and (min_score_vpn_id is None or _["Score"] < min_score)):
+        min_score = _["Score"]
+        min_score_vpn_id = _["ID"]
 
-candidates_2_size = float(len(candidates_1)) / 100.00 * 5.00
-candidates_2 = sorted(candidates_1, key=lambda l: l["Score"])[:int(math.ceil(candidates_2_size))]
-random_candidate = random.choice(candidates_2)
-vpn_connection_id = random_candidate["ID"]
-print(vpn_connection_id)
+print(min_score_vpn_id)
 
 END`
 
